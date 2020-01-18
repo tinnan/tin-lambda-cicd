@@ -20,7 +20,7 @@ Globals:
     AutoPublishAlias: live
     DeploymentPreference:
       Enabled: true
-      Type: Canary10Percent5Minutes
+      Type: Linear10PercentEvery1Minute
       Role: !Ref CodeDeployRole
 
 Resources:
