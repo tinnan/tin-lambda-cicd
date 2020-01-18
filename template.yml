@@ -20,7 +20,8 @@ Globals:
     AutoPublishAlias: live
     DeploymentPreference:
       Enabled: true
-      Type: Linear10PercentEvery1Minute
+      Type: Canary10Percent10Minutes
+      # Type: Linear10PercentEvery1Minute
       Role: !Ref CodeDeployRole
 
 Resources:
@@ -37,6 +38,9 @@ Resources:
         Fn::GetAtt:
         - LambdaExecutionRole
         - Arn
+      DeploymentPreference:
+        Hooks:
+          PreTraffic: !Ref PreTrafficHook
       Events:
         GetEvent:
           Type: Api
@@ -48,6 +52,32 @@ Resources:
           Properties:
             Path: /
             Method: post
+  PreTrafficHook:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: preTrafficHook.handler
+      CodeUri: .    
+      Policies:
+        - Version: "2012-10-17"
+          Statement:
+          - Effect: "Allow"
+            Action:
+              - "codedeploy:PutLifecycleEventHookExecutionStatus"
+            Resource:
+              !Sub 'arn:${AWS::Partition}:codedeploy:${AWS::Region}:${AWS::AccountId}:deploymentgroup:*/*'
+        - Version: "2012-10-17"
+          Statement:
+          - Effect: "Allow"
+            Action:
+              - "lambda:InvokeFunction"
+            Resource: !Ref HelloWorld.Version
+      Runtime: nodejs12.x
+      FunctionName: 'CodeDeployHook_preTrafficHook'
+      DeploymentPreference:
+        Enabled: false
+      Environment:
+        Variables:
+          NewVersion: !Ref HelloWorld.Version
   LambdaExecutionRole:
     Description: Creating service role in IAM for AWS Lambda
     Type: AWS::IAM::Role
